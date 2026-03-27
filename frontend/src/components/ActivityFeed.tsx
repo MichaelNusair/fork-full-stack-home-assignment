@@ -14,8 +14,8 @@ const ACTION_ICONS: Record<ActivityAction, string> = {
   TASK_CREATED: '+',
   TASK_UPDATED: '~',
   TASK_DELETED: '×',
-  COMMENT_ADDED: '💬',
-  COMMENT_DELETED: '🗑',
+  COMMENT_ADDED: '+',
+  COMMENT_DELETED: '×',
 };
 
 const ACTION_COLORS: Record<ActivityAction, string> = {

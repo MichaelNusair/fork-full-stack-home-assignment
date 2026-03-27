@@ -149,7 +149,6 @@ export const Dashboard = () => {
         )}
 
         <div className="bg-white rounded-lg shadow-sm border p-6">
-          {/* Tab bar */}
           <div className="flex items-center border-b mb-4">
             <button
               onClick={() => setActiveTab('tasks')}
@@ -175,7 +174,6 @@ export const Dashboard = () => {
 
           {activeTab === 'tasks' && (
             <>
-              {/* Filter bar */}
               <div className="flex flex-col gap-3 mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <input
@@ -186,7 +184,6 @@ export const Dashboard = () => {
                     className="border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-56"
                   />
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* Status filters */}
                     <span className="text-xs text-gray-400 font-medium">Status:</span>
                     {(['TODO', 'IN_PROGRESS', 'DONE'] as const).map((status) => (
                       <button
@@ -204,7 +201,6 @@ export const Dashboard = () => {
 
                     <span className="text-gray-300">|</span>
 
-                    {/* Priority filters */}
                     <span className="text-xs text-gray-400 font-medium">Priority:</span>
                     {(['LOW', 'MEDIUM', 'HIGH'] as const).map((priority) => (
                       <button
@@ -231,7 +227,6 @@ export const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Saved presets */}
                 <div className="flex flex-wrap items-center gap-2">
                   {presets.map((preset) => (
                     <span

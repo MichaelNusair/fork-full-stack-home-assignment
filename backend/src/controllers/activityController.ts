@@ -21,13 +21,14 @@ const userSelect = {
 
 export const getActivities = async (req: AuthRequest, res: Response) => {
   try {
+    const userId = req.userId!;
     const { action, entityType, entityId, startDate, endDate, page, limit } = req.query;
 
     const pageNum = Math.max(1, parseInt(page as string) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
     const skip = (pageNum - 1) * pageSize;
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { userId };
 
     if (action && typeof action === 'string' && VALID_ACTIONS.includes(action as any)) {
       where.action = action;

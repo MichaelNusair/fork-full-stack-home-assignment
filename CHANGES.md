@@ -85,5 +85,6 @@
 - No refresh token mechanism -- JWT expiry requires re-login.
 - Pagination uses offset-based approach, which can skip/duplicate items if the list changes between pages. Cursor-based pagination would be more robust for real-time data.
 - Error messages returned to the client from the backend are generic (e.g., "Failed to create task") to avoid leaking implementation details, but this means less specific feedback for debugging.
-- Activity log entries are not scoped per user -- any authenticated user can see all activity. In a multi-tenant system, this would need to be restricted.
 - Saved filter presets are stored in localStorage, so they don't roam across devices or persist after clearing browser data. A server-backed approach would be needed for production.
+- The `CommentList` component and `getTaskById` endpoint exist but aren't used -- there is no task detail view in the frontend. Adding one would let users see and manage comments.
+- No automated tests. The project has no test runner or test files. Unit tests for the controllers and integration tests for the API would be the highest-value addition.
