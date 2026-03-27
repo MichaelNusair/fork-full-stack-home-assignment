@@ -22,11 +22,13 @@ export interface Comment {
   user: User;
 }
 
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
+
 export interface Task {
   id: string;
   title: string;
   description?: string | null;
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  status: TaskStatus;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   userId: string;
   createdAt: string;
@@ -123,3 +125,5 @@ export interface RegisterInput {
   password: string;
   name?: string;
 }
+
+export type ViewMode = 'list' | 'board';

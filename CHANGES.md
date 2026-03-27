@@ -70,6 +70,15 @@
 
 - Added a migration (`20260327000000_add_activity_log_and_constraints`) that reconciles the schema drift from the original migration: drops the unused `Project` table, adds unique constraints, adds performance indexes, updates foreign keys to cascade on delete, and creates the new `ActivityLog` table.
 
+### Kanban Board View (Creative Feature)
+
+- **Board view toggle**: Users can switch between a traditional list view and a Kanban board via a toggle in the toolbar. The preference is persisted to localStorage.
+- **Drag-and-drop status changes**: Tasks can be dragged between TODO, In Progress, and Done columns. The status update fires immediately via an optimistic UI update, with automatic rollback on API failure.
+- **Responsive column layout**: Three columns on desktop (`sm:grid-cols-3`), stacked vertically on mobile.
+- **Inline editing from the board**: Clicking Edit on a card opens an edit panel above the board columns, keeping the board layout undisturbed.
+- **No new dependencies**: Drag-and-drop is implemented with the native HTML5 Drag and Drop API, avoiding additional library weight.
+- **Shared infrastructure**: The board reuses the same `useTasks` hook, filters, and search as the list view. Switching views preserves the current filter state.
+
 ## Architectural Decisions
 
 - **Shared Prisma singleton** over per-controller instantiation to avoid wasting database connections.
@@ -79,6 +88,8 @@
 - **Fire-and-forget activity logging** -- the `logActivity` helper intentionally does not `await` the database write. A failed log entry should never cause a user-facing error on the actual operation. Failures are caught and logged to stderr.
 - **URL-synced filters via `useSearchParams`** instead of component-local state. This makes filtered views bookmark-able and shareable with zero extra infrastructure, and keeps the filter state in sync with the browser's back/forward navigation.
 - **Debounce at the display boundary** -- the raw search input value is stored immediately (for responsive typing), but the debounced value is what gets passed to `useTasks`. This keeps the input snappy while preventing excessive API calls.
+- **Native HTML5 drag-and-drop** for the Kanban board instead of a library like `react-beautiful-dnd` or `dnd-kit`. The interaction model is simple (move a card between three columns), so native DnD keeps the bundle lean and avoids an extra dependency. The trade-off is slightly less polish on touch devices, which is acceptable for a desktop-focused task management tool.
+- **Higher page limit in board mode** (`limit=100`) -- the board fetches all tasks in one request so every card appears in its column without pagination controls. For a typical team's task count this is fine; a production version would switch to per-column cursor-based loading.
 
 ## Known Limitations
 
