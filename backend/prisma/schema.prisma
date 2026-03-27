@@ -1,4 +1,3 @@
-// This is your Prisma schema file
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,8 +9,8 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
-  email     String
-  username  String
+  email     String   @unique
+  username  String   @unique
   password  String
   name      String?
   createdAt DateTime @default(now())
@@ -36,6 +35,10 @@ model Task {
   assignments TaskAssignment[]
   comments    Comment[]
   tags        TaskTag[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model TaskAssignment {
@@ -43,8 +46,10 @@ model TaskAssignment {
   taskId String
   userId String
 
-  task Task @relation(fields: [taskId], references: [id])
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id])
+
+  @@unique([taskId, userId])
 }
 
 model Comment {
@@ -55,13 +60,15 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  task Task @relation(fields: [taskId], references: [id])
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id])
+
+  @@index([taskId])
 }
 
 model Tag {
   id        String   @id @default(cuid())
-  name      String
+  name      String   @unique
   color     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,6 +81,8 @@ model TaskTag {
   taskId String
   tagId  String
 
-  task Task @relation(fields: [taskId], references: [id])
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   tag  Tag  @relation(fields: [tagId], references: [id])
+
+  @@unique([taskId, tagId])
 }
