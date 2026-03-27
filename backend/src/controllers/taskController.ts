@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../lib/prisma';
+import { logActivity } from '../lib/activityLogger';
 
 const VALID_STATUSES = ['TODO', 'IN_PROGRESS', 'DONE'] as const;
 const VALID_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'] as const;
@@ -12,10 +13,13 @@ const userSelect = {
   name: true,
 } as const;
 
+const VALID_SORT_FIELDS = ['createdAt', 'title', 'status', 'priority'] as const;
+const VALID_SORT_ORDERS = ['asc', 'desc'] as const;
+
 export const getTasks = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    const { search, status, page, limit } = req.query;
+    const { search, status, priority, page, limit, sortBy, sortOrder } = req.query;
 
     const pageNum = Math.max(1, parseInt(page as string) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
@@ -27,12 +31,19 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
       where.status = status;
     }
 
+    if (priority && typeof priority === 'string' && VALID_PRIORITIES.includes(priority as any)) {
+      where.priority = priority;
+    }
+
     if (search && typeof search === 'string') {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
       ];
     }
+
+    const field = VALID_SORT_FIELDS.includes(sortBy as any) ? (sortBy as string) : 'createdAt';
+    const order = VALID_SORT_ORDERS.includes(sortOrder as any) ? (sortOrder as string) : 'desc';
 
     const [tasks, total] = await Promise.all([
       prisma.task.findMany({
@@ -45,7 +56,7 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { [field]: order },
         skip,
         take: pageSize,
       }),
@@ -103,6 +114,8 @@ export const createTask = async (req: AuthRequest, res: Response) => {
     });
 
     res.status(201).json(task);
+
+    logActivity(userId, 'TASK_CREATED', 'TASK', task.id, { title: task.title });
   } catch (error) {
     console.error('Error creating task:', error);
     res.status(500).json({ error: 'Failed to create task' });
@@ -150,6 +163,13 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
     });
 
     res.json(task);
+
+    const changes: Record<string, { from: unknown; to: unknown }> = {};
+    if (title && title.trim() !== existing.title) changes.title = { from: existing.title, to: title.trim() };
+    if (description !== undefined && (description?.trim() || null) !== existing.description) changes.description = { from: existing.description, to: description?.trim() || null };
+    if (status && status !== existing.status) changes.status = { from: existing.status, to: status };
+    if (priority && priority !== existing.priority) changes.priority = { from: existing.priority, to: priority };
+    logActivity(userId, 'TASK_UPDATED', 'TASK', id, { title: task.title, changes });
   } catch (error) {
     console.error('Error updating task:', error);
     res.status(500).json({ error: 'Failed to update task' });
@@ -172,6 +192,8 @@ export const deleteTask = async (req: AuthRequest, res: Response) => {
     await prisma.task.delete({ where: { id } });
 
     res.status(204).send();
+
+    logActivity(userId, 'TASK_DELETED', 'TASK', id, { title: existing.title });
   } catch (error) {
     console.error('Error deleting task:', error);
     res.status(500).json({ error: 'Failed to delete task' });

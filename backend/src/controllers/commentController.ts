@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../lib/prisma';
+import { logActivity } from '../lib/activityLogger';
 
 const userSelect = {
   id: true,
@@ -39,6 +40,11 @@ export const createComment = async (req: AuthRequest, res: Response) => {
     });
 
     res.status(201).json(comment);
+
+    logActivity(userId, 'COMMENT_ADDED', 'COMMENT', comment.id, {
+      taskId,
+      preview: content.trim().slice(0, 100),
+    });
   } catch (error) {
     console.error('Error creating comment:', error);
     res.status(500).json({ error: 'Failed to create comment' });
@@ -84,6 +90,8 @@ export const deleteComment = async (req: AuthRequest, res: Response) => {
     await prisma.comment.delete({ where: { id } });
 
     res.status(204).send();
+
+    logActivity(userId, 'COMMENT_DELETED', 'COMMENT', id, { taskId: comment.taskId });
   } catch (error) {
     console.error('Error deleting comment:', error);
     res.status(500).json({ error: 'Failed to delete comment' });

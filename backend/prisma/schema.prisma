@@ -16,9 +16,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tasks       Task[]
-  assignments TaskAssignment[]
-  comments    Comment[]
+  tasks        Task[]
+  assignments  TaskAssignment[]
+  comments     Comment[]
+  activityLogs ActivityLog[]
 }
 
 model Task {
@@ -85,4 +86,20 @@ model TaskTag {
   tag  Tag  @relation(fields: [tagId], references: [id])
 
   @@unique([taskId, tagId])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  userId     String
+  metadata   String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }
