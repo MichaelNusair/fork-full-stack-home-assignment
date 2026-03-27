@@ -123,3 +123,7 @@ export interface RegisterInput {
   password: string;
   name?: string;
 }
+
+export type ViewMode = 'list' | 'board';
+
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
