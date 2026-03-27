@@ -49,15 +49,42 @@
 - **Auth context**: Moved auth state from a local hook into a React Context so it's shared properly across the entire component tree instead of duplicated per-consumer.
 - **Render optimization**: Wrapped `TaskList` and `TaskForm` in `React.memo` and memoized callbacks with `useCallback`.
 
+## New Features
+
+### Advanced Filtering & Search (Option B)
+
+- **Priority filtering**: Added priority query parameter to `GET /api/tasks`. The dashboard now shows LOW / MEDIUM / HIGH toggle buttons alongside the existing status filters.
+- **Debounced search**: Search input uses a 300ms debounce so keystrokes don't trigger a request per character.
+- **URL-based filter state**: Filter values (search, status, priority) are synced to URL query parameters via `useSearchParams`. This means filtered views are shareable -- copy the URL and paste it to get the same filtered result.
+- **Saved filter presets**: Users can save the current filter combination as a named preset (stored in localStorage). Presets appear as clickable pills above the task list and can be deleted.
+- **Server-side sort support**: Backend now accepts `sortBy` and `sortOrder` query params, validated against a whitelist of allowed fields.
+
+### Activity Feed / Audit Log (Option D)
+
+- **ActivityLog database model**: New `ActivityLog` table with indexes on `userId`, `(entityType, entityId)`, and `createdAt` for efficient querying.
+- **Automatic activity logging**: Every task creation, update, and deletion, as well as comment creation and deletion, writes an activity log entry. For task updates, the metadata captures a diff of changed fields (old and new values). Logging is fire-and-forget so it never blocks the API response.
+- **Activity API**: `GET /api/activities` endpoint with pagination and optional filters for action type, entity type, entity ID, and date range.
+- **Activity feed UI**: A new "Activity" tab on the dashboard shows a chronological feed of all actions. Each entry displays the actor, action description, change details (for updates), and a relative timestamp. The feed has its own filter bar (action type dropdown, date range pickers) and pagination.
+
+### Database Migration
+
+- Added a migration (`20260327000000_add_activity_log_and_constraints`) that reconciles the schema drift from the original migration: drops the unused `Project` table, adds unique constraints, adds performance indexes, updates foreign keys to cascade on delete, and creates the new `ActivityLog` table.
+
 ## Architectural Decisions
 
 - **Shared Prisma singleton** over per-controller instantiation to avoid wasting database connections.
 - **Auth context** over per-component hook to ensure a single source of truth for the logged-in user.
 - **Key-based remount** for refreshing the task list after creation, rather than passing callbacks between sibling state trees. Simpler to reason about and avoids tightly coupling Dashboard to TaskList internals.
 - **Pagination metadata in the response envelope** (`{ tasks, pagination }`) rather than headers, since it's easier for frontend consumers and more explicit.
+- **Fire-and-forget activity logging** -- the `logActivity` helper intentionally does not `await` the database write. A failed log entry should never cause a user-facing error on the actual operation. Failures are caught and logged to stderr.
+- **URL-synced filters via `useSearchParams`** instead of component-local state. This makes filtered views bookmark-able and shareable with zero extra infrastructure, and keeps the filter state in sync with the browser's back/forward navigation.
+- **Debounce at the display boundary** -- the raw search input value is stored immediately (for responsive typing), but the debounced value is what gets passed to `useTasks`. This keeps the input snappy while preventing excessive API calls.
 
 ## Known Limitations
 
 - No refresh token mechanism -- JWT expiry requires re-login.
 - Pagination uses offset-based approach, which can skip/duplicate items if the list changes between pages. Cursor-based pagination would be more robust for real-time data.
 - Error messages returned to the client from the backend are generic (e.g., "Failed to create task") to avoid leaking implementation details, but this means less specific feedback for debugging.
+- Saved filter presets are stored in localStorage, so they don't roam across devices or persist after clearing browser data. A server-backed approach would be needed for production.
+- The `CommentList` component and `getTaskById` endpoint exist but aren't used -- there is no task detail view in the frontend. Adding one would let users see and manage comments.
+- No automated tests. The project has no test runner or test files. Unit tests for the controllers and integration tests for the API would be the highest-value addition.

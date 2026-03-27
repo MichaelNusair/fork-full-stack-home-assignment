@@ -28,6 +28,7 @@ export const useTasks = (filters?: TaskFilters): UseTasksReturn => {
       const params = new URLSearchParams();
       if (filters?.search) params.set('search', filters.search);
       if (filters?.status) params.set('status', filters.status);
+      if (filters?.priority) params.set('priority', filters.priority);
       params.set('page', String(page));
       if (filters?.limit) params.set('limit', String(filters.limit));
 
@@ -40,7 +41,7 @@ export const useTasks = (filters?: TaskFilters): UseTasksReturn => {
     } finally {
       setLoading(false);
     }
-  }, [filters?.search, filters?.status, filters?.limit, page]);
+  }, [filters?.search, filters?.status, filters?.priority, filters?.limit, page]);
 
   useEffect(() => {
     fetchTasks();
@@ -48,7 +49,7 @@ export const useTasks = (filters?: TaskFilters): UseTasksReturn => {
 
   useEffect(() => {
     setPage(1);
-  }, [filters?.search, filters?.status]);
+  }, [filters?.search, filters?.status, filters?.priority]);
 
   const createTask = useCallback(async (taskData: CreateTaskInput): Promise<Task> => {
     const newTask = await api.post<Task>('/tasks', taskData);
