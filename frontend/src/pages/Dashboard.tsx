@@ -36,6 +36,8 @@ type Tab = 'tasks' | 'activity';
 export const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
+  // Used as a React `key` on the task views -- incrementing forces a full
+  // unmount/remount which triggers a data refetch (e.g. after creating a task).
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<Tab>('tasks');
   const [viewMode, setViewMode] = useState<ViewMode>(loadViewMode);
@@ -46,6 +48,8 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const { filters, setFilters } = useFilterParams();
 
+  // Raw filters.search updates on every keystroke (responsive input), but
+  // taskFilters.search uses the debounced value to limit API calls.
   const debouncedSearch = useDebounce(filters.search, 300);
 
   const taskFilters = useMemo<TaskFilters>(

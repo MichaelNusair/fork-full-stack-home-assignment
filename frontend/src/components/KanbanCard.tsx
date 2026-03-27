@@ -14,6 +14,8 @@ interface KanbanCardProps {
 }
 
 export const KanbanCard = React.memo(({ task, onEdit, onDelete }: KanbanCardProps) => {
+  // Serialize task ID + current status as JSON drag payload; the column's
+  // drop handler reads this to decide whether a status change is needed.
   const handleDragStart = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.dataTransfer.setData(

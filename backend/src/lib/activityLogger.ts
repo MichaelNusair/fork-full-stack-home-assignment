@@ -13,6 +13,8 @@ interface ActivityMetadata {
   [key: string]: unknown;
 }
 
+// Fire-and-forget: the returned Promise is intentionally not awaited so audit
+// logging never blocks or fails the parent request. Errors go to stderr only.
 export function logActivity(
   userId: string,
   action: ActivityAction,

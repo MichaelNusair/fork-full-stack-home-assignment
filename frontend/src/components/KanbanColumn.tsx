@@ -49,6 +49,7 @@ export const KanbanColumn = React.memo(
       setDragOver(true);
     }, []);
 
+    // Ignore dragleave events fired when moving between child elements inside the column
     const handleDragLeave = useCallback((e: React.DragEvent) => {
       if (e.currentTarget.contains(e.relatedTarget as Node)) return;
       setDragOver(false);

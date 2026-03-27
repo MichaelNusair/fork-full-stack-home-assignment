@@ -92,6 +92,7 @@ export const login = async (req: AuthRequest, res: Response) => {
       where: { email: email.trim().toLowerCase() },
     });
 
+    // Same generic error for "user not found" and "wrong password" to prevent user enumeration
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

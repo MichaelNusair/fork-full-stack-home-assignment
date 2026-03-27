@@ -7,6 +7,7 @@ export interface AuthRequest extends Request {
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    // Expects "Authorization: Bearer <token>" header
     const token = req.headers.authorization?.split(' ')[1];
 
     if (!token) {

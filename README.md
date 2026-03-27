@@ -2,17 +2,21 @@
 
 A full-stack Task Management application built with React, TypeScript, Node.js, and Express.
 
-> **📋 Assignment Instructions**: For complete assignment details, requirements, and submission guidelines, please see [ASSIGNMENT.md](./ASSIGNMENT.md).
+> **Assignment Instructions**: For complete assignment details, requirements, and evaluation criteria, see [ASSIGNMENT.md](./ASSIGNMENT.md).
+
+> **Changelog**: For a detailed list of all bug fixes, improvements, new features, and architectural decisions, see [CHANGES.md](./CHANGES.md).
 
 ## Overview
 
 This is a Task Management application that allows users to:
 
-- Register and authenticate
-- Create and manage tasks
+- Register and authenticate (JWT-based)
+- Create, update, and delete tasks with status and priority tracking
+- View tasks in a traditional list or a drag-and-drop Kanban board
+- Search, filter by status/priority, and save filter presets (URL-synced for shareable links)
+- Track all changes through a paginated activity feed / audit log
 - Add comments to tasks
 - Assign tasks to team members
-- Tag tasks for better organization
 
 ## Tech Stack
 
@@ -20,20 +24,20 @@ This is a Task Management application that allows users to:
 
 - React 18
 - TypeScript
-- Vite
-- React Router
-- Tailwind CSS
-- Fetch API
+- Vite 5
+- React Router v6
+- Tailwind CSS 3
+- Fetch API (no axios -- keeps the bundle lean)
 
 ### Backend
 
 - Node.js
-- Express
+- Express 4
 - TypeScript
 - Prisma ORM
 - PostgreSQL (via Docker)
-- JWT Authentication
-- bcrypt
+- JWT Authentication (jsonwebtoken + bcryptjs)
+- express-rate-limit (brute-force protection on auth endpoints)
 
 ## Prerequisites
 
@@ -64,40 +68,25 @@ npm install
 # Copy environment file
 cp .env.example .env
 
-# Update .env with your configuration (optional, defaults are provided)
-# DATABASE_URL="postgresql://taskmanager:taskmanager123@localhost:5432/taskmanager?schema=public"
-# JWT_SECRET="your-secret-key-change-in-production"
-# PORT=5000
+# IMPORTANT: JWT_SECRET is required -- the server will refuse to start without it.
+# The .env.example provides a default value suitable for development.
 
 # Start PostgreSQL database with Docker and setup database (migrate + seed)
 npm run db:setup
-
-# Or manually:
-# Start PostgreSQL Docker container
-# npm run db:docker:up
-
-# Generate Prisma client
-# npm run db:generate
-
-# Run database migrations
-# npm run db:migrate
-
-# Seed the database with sample data
-# npm run db:seed
 
 # Start the development server
 npm run dev
 ```
 
-**Note**: The `db:setup` script will:
+The `db:setup` script will:
 
 1. Start the PostgreSQL Docker container
 2. Wait for the database to be ready
-3. Generate Prisma client
+3. Generate the Prisma client
 4. Run migrations
 5. Seed the database with sample data
 
-The backend server will run on `http://localhost:3000`
+The backend server will run on `http://localhost:3000`.
 
 ### 3. Frontend Setup
 
@@ -113,7 +102,7 @@ npm install
 npm run dev
 ```
 
-The frontend will run on `http://localhost:3000`
+The frontend will run on `http://localhost:5173` (Vite's default). API requests are proxied to `http://localhost:3000` via Vite's dev server proxy.
 
 ## Project Structure
 
@@ -121,49 +110,69 @@ The frontend will run on `http://localhost:3000`
 full-stack-home-assignment/
 ├── frontend/
 │   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── pages/          # Page components
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── services/       # API service layer
-│   │   ├── types/          # TypeScript type definitions
-│   │   └── App.tsx         # Main app component
+│   │   ├── components/       # UI components (TaskList, TaskForm, KanbanBoard, ActivityFeed, etc.)
+│   │   ├── pages/            # Page components (Dashboard, Login, Register)
+│   │   ├── hooks/            # Custom hooks (useTasks, useAuth, useActivities, useDebounce, useFilterParams)
+│   │   ├── services/         # API service layer
+│   │   ├── types/            # TypeScript type definitions
+│   │   ├── App.tsx           # Root component with routing
+│   │   └── main.tsx          # Entry point
+│   ├── vite.config.ts
+│   ├── tailwind.config.js
 │   └── package.json
 ├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma     # Database schema (7 models)
+│   │   └── migrations/       # Prisma migrations
 │   ├── src/
-│   │   ├── routes/         # Express routes
-│   │   ├── controllers/    # Route controllers
-│   │   ├── middleware/     # Express middleware
-│   │   ├── services/       # Business logic
-│   │   ├── db/             # Database schema
-│   │   └── server.ts       # Express server
+│   │   ├── routes/           # Express route definitions
+│   │   ├── controllers/      # Request handlers (auth, task, comment, activity)
+│   │   ├── middleware/        # Auth middleware (JWT verification)
+│   │   ├── lib/              # Shared utilities (Prisma singleton, activity logger)
+│   │   ├── db/               # Database seed script
+│   │   └── server.ts         # Express server entry point
+│   ├── docker-compose.yml
 │   └── package.json
+├── ASSIGNMENT.md
+├── CHANGES.md
 └── README.md
 ```
 
 ## API Endpoints
 
+All endpoints except auth require a valid JWT in the `Authorization: Bearer <token>` header.
+
 ### Authentication
 
 - `POST /api/auth/register` - Register a new user
 - `POST /api/auth/login` - Login user
+- `GET /api/auth/me` - Get current authenticated user
 
 ### Tasks
 
-- `GET /api/tasks` - Get all tasks (with optional filters)
-- `GET /api/tasks/:id` - Get task by ID
-- `POST /api/tasks` - Create a new task
-- `PUT /api/tasks/:id` - Update a task
-- `DELETE /api/tasks/:id` - Delete a task
+- `GET /api/tasks` - List tasks (paginated). Query params: `search`, `status`, `priority`, `sortBy`, `sortOrder`, `page`, `limit`
+- `GET /api/tasks/:id` - Get a single task with comments
+- `POST /api/tasks` - Create a task
+- `PUT /api/tasks/:id` - Update a task (owner only)
+- `DELETE /api/tasks/:id` - Delete a task (owner only)
 
 ### Comments
 
 - `GET /api/comments?taskId=:id` - Get comments for a task
 - `POST /api/comments` - Create a comment
-- `DELETE /api/comments/:id` - Delete a comment
+- `DELETE /api/comments/:id` - Delete a comment (author only)
+
+### Activities
+
+- `GET /api/activities` - Activity audit log (paginated). Query params: `action`, `entityType`, `entityId`, `startDate`, `endDate`, `page`, `limit`
+
+### Health
+
+- `GET /health` - Health check
 
 ## Default Test Users
 
-After seeding, you can login with:
+After seeding, you can log in with:
 
 - Email: `john@example.com`, Password: `password123`
 - Email: `jane@example.com`, Password: `password123`
@@ -208,9 +217,10 @@ Connection string: `postgresql://taskmanager:taskmanager123@localhost:5432/taskm
 
 ## Notes
 
-- The application is set up for development. For production, ensure proper environment variables and security configurations.
-- The database is seeded with sample data for testing purposes.
+- The seed script is idempotent for users and tags (uses `upsert`), so it can be re-run safely.
+- Auth endpoints are rate-limited to 20 requests per 15-minute window to prevent brute-force attacks.
 - CORS is enabled for development. Adjust for production needs.
+- The application is set up for development. For production, ensure proper environment variables and security configurations.
 
 ## Troubleshooting
 

@@ -21,6 +21,7 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
     const { search, status, priority, page, limit, sortBy, sortOrder } = req.query;
 
+    // Clamp page >= 1, page size to [1, 100] to prevent abuse or over-fetching
     const pageNum = Math.max(1, parseInt(page as string) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
     const skip = (pageNum - 1) * pageSize;
@@ -45,6 +46,7 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
     const field = VALID_SORT_FIELDS.includes(sortBy as any) ? (sortBy as string) : 'createdAt';
     const order = VALID_SORT_ORDERS.includes(sortOrder as any) ? (sortOrder as string) : 'desc';
 
+    // Run paginated query and count in parallel -- same WHERE, no sequential round-trip
     const [tasks, total] = await Promise.all([
       prisma.task.findMany({
         where,
@@ -115,6 +117,7 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(task);
 
+    // Log after responding so the client isn't blocked by audit writes
     logActivity(userId, 'TASK_CREATED', 'TASK', task.id, { title: task.title });
   } catch (error) {
     console.error('Error creating task:', error);
@@ -146,6 +149,8 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
 
     const task = await prisma.task.update({
       where: { id },
+      // Only include fields that were actually sent in the request body.
+      // description uses !== undefined so callers can explicitly clear it to null.
       data: {
         ...(title && { title: title.trim() }),
         ...(description !== undefined && { description: description?.trim() || null }),
@@ -164,6 +169,7 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
 
     res.json(task);
 
+    // Build a before/after diff of changed fields for the activity log
     const changes: Record<string, { from: unknown; to: unknown }> = {};
     if (title && title.trim() !== existing.title) changes.title = { from: existing.title, to: title.trim() };
     if (description !== undefined && (description?.trim() || null) !== existing.description) changes.description = { from: existing.description, to: description?.trim() || null };

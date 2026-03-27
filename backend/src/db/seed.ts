@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   const hashedPassword = await bcrypt.hash('password123', 10);
 
+  // upsert with empty update = create-if-missing, skip-if-exists (idempotent seed)
   const user1 = await prisma.user.upsert({
     where: { email: 'john@example.com' },
     update: {},

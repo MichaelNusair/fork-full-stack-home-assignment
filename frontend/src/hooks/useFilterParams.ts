@@ -35,6 +35,7 @@ export function useFilterParams() {
           }
         }
 
+        // replace: true avoids polluting browser history on every filter change
         return params;
       }, { replace: true });
     },

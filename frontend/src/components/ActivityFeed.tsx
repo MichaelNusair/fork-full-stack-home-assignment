@@ -42,6 +42,9 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString();
 }
 
+// Build a human-readable activity description from the structured log entry.
+// Metadata is stored as a JSON string in the DB; parse defensively since
+// older entries may have a different shape.
 function buildDescription(entry: ActivityLog): string {
   const userName = entry.user.name || entry.user.username;
   const label = ACTION_LABELS[entry.action] || entry.action;
@@ -60,6 +63,8 @@ function buildDescription(entry: ActivityLog): string {
   return `${userName} ${label}${detail}`;
 }
 
+// For update events, render a compact "field: old -> new" diff from the
+// changes object embedded in metadata. Returns null when not applicable.
 function buildChangeSummary(entry: ActivityLog): string | null {
   if (entry.action !== 'TASK_UPDATED' || !entry.metadata) return null;
   try {

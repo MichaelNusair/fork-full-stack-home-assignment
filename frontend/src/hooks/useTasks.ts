@@ -47,6 +47,7 @@ export const useTasks = (filters?: TaskFilters): UseTasksReturn => {
     fetchTasks();
   }, [fetchTasks]);
 
+  // Reset to page 1 when filters change so the user doesn't land on a stale page
   useEffect(() => {
     setPage(1);
   }, [filters?.search, filters?.status, filters?.priority]);
@@ -57,6 +58,8 @@ export const useTasks = (filters?: TaskFilters): UseTasksReturn => {
     return newTask;
   }, [fetchTasks]);
 
+  // After a successful API update, swap the task in local state to give
+  // immediate feedback without a full refetch.
   const updateTask = useCallback(async (id: string, taskData: UpdateTaskInput): Promise<Task> => {
     const updatedTask = await api.put<Task>(`/tasks/${id}`, taskData);
     setTasks((prev) => prev.map((task) => (task.id === id ? updatedTask : task)));
