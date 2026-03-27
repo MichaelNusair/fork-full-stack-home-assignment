@@ -8,6 +8,7 @@
 - **XSS via `dangerouslySetInnerHTML`**: Task descriptions and comment content were rendered as raw HTML. Switched to plain text rendering to prevent stored XSS.
 - **Hardcoded JWT fallback secret**: The auth middleware and controllers fell back to `'fallback-secret'` when `JWT_SECRET` was missing. Removed the fallback; the server now refuses to start without it.
 - **Missing authorization on mutations**: `updateTask`, `deleteTask`, and `deleteComment` didn't verify resource ownership. Added ownership checks returning 403 when the authenticated user doesn't own the resource.
+- **No rate limiting on auth endpoints**: Login and register had no protection against brute-force attacks. Added rate limiting (20 requests per 15-minute window) using `express-rate-limit`.
 
 ### Bugs
 
@@ -57,7 +58,6 @@
 
 ## Known Limitations
 
-- No rate limiting on auth endpoints.
 - No refresh token mechanism -- JWT expiry requires re-login.
 - Pagination uses offset-based approach, which can skip/duplicate items if the list changes between pages. Cursor-based pagination would be more robust for real-time data.
 - Error messages returned to the client from the backend are generic (e.g., "Failed to create task") to avoid leaking implementation details, but this means less specific feedback for debugging.
