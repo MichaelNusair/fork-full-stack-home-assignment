@@ -4,11 +4,10 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create users
   const hashedPassword = await bcrypt.hash('password123', 10);
-  
+
   const user1 = await prisma.user.upsert({
-    where: { id: 'user1' },
+    where: { email: 'john@example.com' },
     update: {},
     create: {
       id: 'user1',
@@ -20,7 +19,7 @@ async function main() {
   });
 
   const user2 = await prisma.user.upsert({
-    where: { id: 'user2' },
+    where: { email: 'jane@example.com' },
     update: {},
     create: {
       id: 'user2',
@@ -32,7 +31,7 @@ async function main() {
   });
 
   const user3 = await prisma.user.upsert({
-    where: { id: 'user3' },
+    where: { email: 'bob@example.com' },
     update: {},
     create: {
       id: 'user3',
@@ -43,36 +42,30 @@ async function main() {
     },
   });
 
-  // Create tags
-  const tag1 = await prisma.tag.create({
-    data: {
-      name: 'Frontend',
-      color: '#3B82F6',
-    },
+  const tag1 = await prisma.tag.upsert({
+    where: { name: 'Frontend' },
+    update: {},
+    create: { name: 'Frontend', color: '#3B82F6' },
   });
 
-  const tag2 = await prisma.tag.create({
-    data: {
-      name: 'Backend',
-      color: '#10B981',
-    },
+  const tag2 = await prisma.tag.upsert({
+    where: { name: 'Backend' },
+    update: {},
+    create: { name: 'Backend', color: '#10B981' },
   });
 
-  const tag3 = await prisma.tag.create({
-    data: {
-      name: 'Urgent',
-      color: '#EF4444',
-    },
+  const tag3 = await prisma.tag.upsert({
+    where: { name: 'Urgent' },
+    update: {},
+    create: { name: 'Urgent', color: '#EF4444' },
   });
 
-  const tag4 = await prisma.tag.create({
-    data: {
-      name: 'Bug',
-      color: '#F59E0B',
-    },
+  const tag4 = await prisma.tag.upsert({
+    where: { name: 'Bug' },
+    update: {},
+    create: { name: 'Bug', color: '#F59E0B' },
   });
 
-  // Create tasks
   const task1 = await prisma.task.create({
     data: {
       title: 'Implement user authentication',
@@ -97,9 +90,7 @@ async function main() {
       priority: 'MEDIUM',
       userId: user1.id,
       tags: {
-        create: [
-          { tagId: tag1.id },
-        ],
+        create: [{ tagId: tag1.id }],
       },
     },
   });
@@ -128,14 +119,12 @@ async function main() {
       priority: 'MEDIUM',
       userId: user1.id,
       tags: {
-        create: [
-          { tagId: tag2.id },
-        ],
+        create: [{ tagId: tag2.id }],
       },
     },
   });
 
-  const task5 = await prisma.task.create({
+  await prisma.task.create({
     data: {
       title: 'Implement task filtering',
       description: 'Add filter by status, priority, and assignee',
@@ -145,29 +134,18 @@ async function main() {
     },
   });
 
-  // Create task assignments
   await prisma.taskAssignment.create({
-    data: {
-      taskId: task1.id,
-      userId: user2.id,
-    },
+    data: { taskId: task1.id, userId: user2.id },
   });
 
   await prisma.taskAssignment.create({
-    data: {
-      taskId: task1.id,
-      userId: user3.id,
-    },
+    data: { taskId: task1.id, userId: user3.id },
   });
 
   await prisma.taskAssignment.create({
-    data: {
-      taskId: task3.id,
-      userId: user1.id,
-    },
+    data: { taskId: task3.id, userId: user1.id },
   });
 
-  // Create comments
   await prisma.comment.create({
     data: {
       content: 'Started working on JWT implementation',
@@ -211,4 +189,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

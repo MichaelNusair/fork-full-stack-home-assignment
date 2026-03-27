@@ -97,7 +97,7 @@ npm run dev
 4. Run migrations
 5. Seed the database with sample data
 
-The backend server will run on `http://localhost:5000`
+The backend server will run on `http://localhost:3000`
 
 ### 3. Frontend Setup
 

@@ -1,46 +1,81 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
+import { Task, TaskFilters, CreateTaskInput, UpdateTaskInput, PaginatedResponse } from '../types';
 
-export const useTasks = (filters?: any) => {
-  const [tasks, setTasks] = useState<any[]>([]);
+interface UseTasksReturn {
+  tasks: Task[];
+  loading: boolean;
+  error: string | null;
+  pagination: { page: number; limit: number; total: number; totalPages: number } | null;
+  createTask: (taskData: CreateTaskInput) => Promise<Task>;
+  updateTask: (id: string, taskData: UpdateTaskInput) => Promise<Task>;
+  deleteTask: (id: string) => Promise<void>;
+  refetch: () => Promise<void>;
+  setPage: (page: number) => void;
+}
+
+export const useTasks = (filters?: TaskFilters): UseTasksReturn => {
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(filters?.page || 1);
+  const [pagination, setPagination] = useState<UseTasksReturn['pagination']>(null);
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams();
+      if (filters?.search) params.set('search', filters.search);
+      if (filters?.status) params.set('status', filters.status);
+      params.set('page', String(page));
+      if (filters?.limit) params.set('limit', String(filters.limit));
+
+      const data = await api.get<PaginatedResponse<Task>>(`/tasks?${params.toString()}`);
+      setTasks(data.tasks);
+      setPagination(data.pagination);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch tasks';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters?.search, filters?.status, filters?.limit, page]);
 
   useEffect(() => {
     fetchTasks();
-  }, [filters]);
+  }, [fetchTasks]);
 
-  const fetchTasks = async () => {
-    setLoading(true);
-    const queryParams = new URLSearchParams(filters || {}).toString();
-    const data = await api.get(`/tasks?${queryParams}`);
-    setTasks(data);
-    setLoading(false);
-  };
+  useEffect(() => {
+    setPage(1);
+  }, [filters?.search, filters?.status]);
 
-  const createTask = async (taskData: any) => {
-    const newTask = await api.post('/tasks', taskData);
-    setTasks([...tasks, newTask]);
+  const createTask = useCallback(async (taskData: CreateTaskInput): Promise<Task> => {
+    const newTask = await api.post<Task>('/tasks', taskData);
+    await fetchTasks();
     return newTask;
-  };
+  }, [fetchTasks]);
 
-  const updateTask = async (id: string, taskData: any) => {
-    const updatedTask = await api.put(`/tasks/${id}`, taskData);
-    setTasks(tasks.map((task) => (task.id === id ? updatedTask : task)));
+  const updateTask = useCallback(async (id: string, taskData: UpdateTaskInput): Promise<Task> => {
+    const updatedTask = await api.put<Task>(`/tasks/${id}`, taskData);
+    setTasks((prev) => prev.map((task) => (task.id === id ? updatedTask : task)));
     return updatedTask;
-  };
+  }, []);
 
-  const deleteTask = async (id: string) => {
+  const deleteTask = useCallback(async (id: string): Promise<void> => {
     await api.delete(`/tasks/${id}`);
-    setTasks(tasks.filter((task) => task.id !== id));
-  };
+    setTasks((prev) => prev.filter((task) => task.id !== id));
+  }, []);
 
   return {
     tasks,
     loading,
+    error,
+    pagination,
     createTask,
     updateTask,
     deleteTask,
     refetch: fetchTasks,
+    setPage,
   };
 };
-

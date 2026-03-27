@@ -2,21 +2,14 @@ export interface User {
   id: string;
   email: string;
   username: string;
-  name?: string;
+  name?: string | null;
 }
 
-export interface Task {
+export interface TaskAssignment {
   id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: string;
+  taskId: string;
   userId: string;
-  createdAt: string;
-  updatedAt: string;
-  user?: any;
-  assignments?: any[];
-  comments?: any[];
+  user: User;
 }
 
 export interface Comment {
@@ -25,8 +18,63 @@ export interface Comment {
   taskId: string;
   userId: string;
   createdAt: string;
-  user?: any;
+  updatedAt: string;
+  user: User;
 }
 
-export type ApiResponse = any;
+export interface Task {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: User;
+  assignments?: TaskAssignment[];
+  comments?: Comment[];
+}
 
+export interface PaginatedResponse<T> {
+  tasks: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface TaskFilters {
+  search?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CreateTaskInput {
+  title: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+}
+
+export interface UpdateTaskInput {
+  title?: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
+
+export interface RegisterInput {
+  email: string;
+  username: string;
+  password: string;
+  name?: string;
+}
