@@ -73,13 +73,9 @@ export const KanbanCard = React.memo(({ task, onEdit, onDelete }: KanbanCardProp
       )}
 
       <div className="flex items-center justify-between mt-3">
-        {task.user ? (
-          <span className="text-[11px] text-gray-400 truncate max-w-[60%]">
-            {task.user.name || task.user.username}
-          </span>
-        ) : (
-          <span />
-        )}
+        <span className="text-[11px] text-gray-400 truncate max-w-[60%]">
+          {task.user ? (task.user.name || task.user.username) : ''}
+        </span>
 
         <div className="flex gap-1 shrink-0">
           <button
